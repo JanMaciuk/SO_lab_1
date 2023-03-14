@@ -22,7 +22,7 @@ public class Main {
 
     //Konfiguracja parametrów symulacji:
     protected static int RRtimeQuant = 5;
-    protected static int processNumber = 1000/10; // Usunąć potem to dzielenie
+    protected static int processNumber = 1000/2; // Usunąć potem to dzielenie
     protected static int runAmount = 20;
 
     public static void main(String[] args) {
@@ -78,7 +78,7 @@ public class Main {
         else if (randomProbability < 8) {time = ThreadLocalRandom.current().nextInt(5,15); }
         else  {time = ThreadLocalRandom.current().nextInt(15,35);}
         // Mała część procesów będzie wykonywana od razu, reszta dojdzie w losowym momencie:
-        if (ThreadLocalRandom.current().nextBoolean() && ThreadLocalRandom.current().nextBoolean() && ThreadLocalRandom.current().nextBoolean()) {
+        if (ThreadLocalRandom.current().nextBoolean() && ThreadLocalRandom.current().nextBoolean()) {
             waitingListFCFS.add(new Proces(time,0));
             waitingListSJF.add(new Proces(time,0));
             waitingListRR.add(new Proces(time,0));
@@ -200,12 +200,16 @@ public class Main {
 
             //Aktywuje procesy, których czas nadszedł :)
             for (Proces proces : waitingListRR) {
-                if (proces.arrivalTime == currentTime) {
+                if (proces.arrivalTime <= currentTime) {
                     activeListRR.add(proces);
                 }
             }
 
             //Przenoszę skończone procesy do archiwum
+            if (activeListRR.isEmpty()) {
+                currentTime += 1;
+            }
+            else {
             for (Proces proces : activeListRR) {
                 if (proces.timeLeft <= 0) {
                     doneListRR.add(proces);
@@ -220,13 +224,14 @@ public class Main {
                     switchNumber += 1;
                 }
                 waitingListRR.remove(proces);
+                currentTime += 1;
 
-            }
+            }}
             for (Proces proces : doneListRR) {
                 activeListRR.remove(proces);// Usuwam podczas iteorwania po innej liście, żeby uniknąć concurrent modification exception
             }
 
-            currentTime += 1;
+
         }
             int longestWaitTime = 0;
             int averageWaitTime = 0;

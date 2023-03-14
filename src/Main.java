@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 public class Main {
     //Muszę deklarować osobne ArrayListy, bo inaczej kopiują się referencje.
@@ -21,8 +22,8 @@ public class Main {
 
     //Konfiguracja parametrów symulacji:
     protected static int RRtimeQuant = 5;
-    protected static int processNumber = 50;
-    protected static int runAmount = 30;
+    protected static int processNumber = 1000/10; // Usunąć potem to dzielenie
+    protected static int runAmount = 20;
 
     public static void main(String[] args) {
 
@@ -76,15 +77,15 @@ public class Main {
         if (randomProbability < 3) {time = ThreadLocalRandom.current().nextInt(1,5);}
         else if (randomProbability < 8) {time = ThreadLocalRandom.current().nextInt(5,15); }
         else  {time = ThreadLocalRandom.current().nextInt(15,35);}
-        // Około połowa procesów będzie wykonywana od razu, druga połowa dojdzie w losowym momencie:
-        if (ThreadLocalRandom.current().nextBoolean()) {
+        // Mała część procesów będzie wykonywana od razu, reszta dojdzie w losowym momencie:
+        if (ThreadLocalRandom.current().nextBoolean() && ThreadLocalRandom.current().nextBoolean() && ThreadLocalRandom.current().nextBoolean()) {
             waitingListFCFS.add(new Proces(time,0));
             waitingListSJF.add(new Proces(time,0));
             waitingListRR.add(new Proces(time,0));
 
         }
         else {
-            int timeToAppear = ThreadLocalRandom.current().nextInt(0,100);
+            int timeToAppear = ThreadLocalRandom.current().nextInt(0,processNumber*2);
             waitingListFCFS.add(new Proces(time,timeToAppear));
             waitingListSJF.add(new Proces(time,timeToAppear));
             waitingListRR.add(new Proces(time,timeToAppear));
@@ -188,7 +189,6 @@ public class Main {
             averageWaitTime += proces.waitingTime;
         }
         averageWaitTime = averageWaitTime / processNumber;
-        ArrayList<Integer> statistics = new ArrayList<>();
         return new SimulationResult(switchNumber,averageWaitTime,longestWaitTime);
     }
 
@@ -213,11 +213,10 @@ public class Main {
                     for (Proces proces2 : activeListRR) {
                         if (proces2.timeLeft >0) {
                             //Jeżeli ten proces jest obecnie wykonywany, to czeka tylko tak długo ile potrzeba na jego wykonanie.
-                            if(proces2.equals(proces)) {proces2.waitingTime += max(timeQuant, proces2.timeLeft);}
-                            else {proces2.waitingTime += timeQuant;}
+                            proces2.waitingTime += min(timeQuant, proces.timeLeft);
                         }
                     }
-                    proces.timeLeft -= timeQuant;// Za każdym razem, kiedy wykonam jedną jednostkę procesu, wszystkie nne czekają.
+                    proces.timeLeft -= min(timeQuant,proces.timeLeft);// Za każdym razem, kiedy wykonam jedną jednostkę procesu, wszystkie nne czekają.
                     switchNumber += 1;
                 }
                 waitingListRR.remove(proces);

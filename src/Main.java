@@ -39,7 +39,7 @@ public class Main {
         printResults(resultsSJF);
         System.out.println("RR:");
         printResults(resultsRR);
-
+        printSimulationInfo();
     }
 
     public static void printResults(ArrayList<SimulationResult> results) {
@@ -53,7 +53,7 @@ public class Main {
         }
         System.out.println("Średnia liczba przełączeń: " + switchNumber/runAmount);
         System.out.println("Średni czas oczekiwania: " + averageWaitTime/runAmount);
-        System.out.println("Najdłuższy czas oczekiwania: " + longestWaitTime);
+        System.out.println("Najdłuższy czas oczekiwania: " + longestWaitTime +"\n");
     }
     private static void processesGenerator() {
         if(!waitingListFCFS.isEmpty()|| !waitingListSJF.isEmpty() || !waitingListRR.isEmpty() || !activeListFCFS.isEmpty() || !activeListSJF.isEmpty() || !activeListRR.isEmpty()) {
@@ -243,5 +243,10 @@ public class Main {
             }
             averageWaitTime = averageWaitTime / processNumber;
             return new SimulationResult(switchNumber,averageWaitTime,longestWaitTime);
+    }
+    public static void printSimulationInfo() {
+        System.out.println("Liczba procesów: " + processNumber);
+        System.out.println("Kwant czasu RR: " + RRtimeQuant);
+        System.out.println("Wyniki to średnia uruchomienia symulacji " + runAmount + " razy.");
     }
 }

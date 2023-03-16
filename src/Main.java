@@ -21,8 +21,8 @@ public class Main {
 
 
     //Konfiguracja parametrów symulacji:
-    protected static int RRtimeQuant = 5;
-    protected static int processNumber = 1000/2; // Usunąć potem to dzielenie
+    protected static int RRtimeQuant = 4;
+    protected static int processNumber = 1000;
     protected static int runAmount = 20;
 
     public static void main(String[] args) {
@@ -55,6 +55,7 @@ public class Main {
         System.out.println("Średni czas oczekiwania: " + averageWaitTime/runAmount);
         System.out.println("Najdłuższy czas oczekiwania: " + longestWaitTime +"\n");
     }
+
     private static void processesGenerator() {
         if(!waitingListFCFS.isEmpty()|| !waitingListSJF.isEmpty() || !waitingListRR.isEmpty() || !activeListFCFS.isEmpty() || !activeListSJF.isEmpty() || !activeListRR.isEmpty()) {
             //Listy powinny być puste, ale better safe than sorry.
@@ -217,7 +218,9 @@ public class Main {
                     for (Proces proces2 : activeListRR) {
                         if (proces2.timeLeft >0) {
                             //Jeżeli ten proces jest obecnie wykonywany, to czeka tylko tak długo ile potrzeba na jego wykonanie.
-                            proces2.waitingTime += min(timeQuant, proces.timeLeft);
+                            //if (proces2.equals(proces)) {proces2.waitingTime += min(timeQuant, proces2.timeLeft);}
+                            //else {proces2.waitingTime += timeQuant;}
+                            proces2.waitingTime += timeQuant;
                         }
                     }
                     proces.timeLeft -= min(timeQuant,proces.timeLeft);// Za każdym razem, kiedy wykonam jedną jednostkę procesu, wszystkie nne czekają.
@@ -236,12 +239,14 @@ public class Main {
             int longestWaitTime = 0;
             int averageWaitTime = 0;
             for (Proces proces:doneListRR) {
+                averageWaitTime += proces.waitingTime;
                 if (proces.waitingTime > longestWaitTime) {
                     longestWaitTime = proces.waitingTime;
                 }
-                averageWaitTime += proces.waitingTime;
+
             }
-            averageWaitTime = averageWaitTime / processNumber;
+            //averageWaitTime = (int) Math.round(averageWaitTime + switchNumber*0.2);
+            averageWaitTime = averageWaitTime / doneListRR.size();
             return new SimulationResult(switchNumber,averageWaitTime,longestWaitTime);
     }
     public static void printSimulationInfo() {

@@ -4,7 +4,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 public class Main {
-    //Muszę deklarować osobne ArrayListy, bo inaczej kopiują się referencje.
+    //Deklaruje osobne ArrayListy, żeby uniknąć kłopotów z kopiowaniem referencji.
     protected static ArrayList<Proces> waitingListFCFS = new ArrayList<>();
     protected static ArrayList<Proces> waitingListSJF = new ArrayList<>();
     protected static ArrayList<Proces> waitingListRR = new ArrayList<>();
@@ -21,9 +21,9 @@ public class Main {
 
 
     //Konfiguracja parametrów symulacji:
-    protected static int RRtimeQuant = 4;
+    protected static int RRtimeQuant = 7;
     protected static int processNumber = 1000;
-    protected static int runAmount = 20;
+    protected static int runAmount = 10;
 
     public static void main(String[] args) {
 
@@ -145,6 +145,7 @@ public class Main {
     private static SimulationResult SJF() {
         int currentTime = 0;
         int switchNumber = 0;
+        Proces lastProces = null;
 
         while(!activeListSJF.isEmpty() || !waitingListSJF.isEmpty()) {
 
@@ -157,7 +158,6 @@ public class Main {
             for(Proces proces:activeListSJF) {
                 if (proces.timeLeft <= 0) {
                     doneListSJF.add(proces);
-                    switchNumber += 1;// Następuje przełączenie
                 }
                 else {
                     proces.waitingTime += 1;
@@ -173,7 +173,9 @@ public class Main {
             activeListSJF.sort(komparator);//sortuje po czasie wykonania, SJF
             //System.out.println(activeListSJF.get(0).timeLeft);
             try {
-                activeListSJF.get(0).timeLeft -= 1;
+                if(lastProces != null && !lastProces.equals(activeListSJF.get(0))) {switchNumber += 1;}
+                lastProces = activeListSJF.get(0);
+                activeListSJF.get(0).timeLeft--;
             }
             catch (IndexOutOfBoundsException e) { // koniec listy procesów
                 break;
@@ -193,7 +195,7 @@ public class Main {
         return new SimulationResult(switchNumber,averageWaitTime,longestWaitTime);
     }
 
-    private static SimulationResult RR(int timeQuant) {
+    private static SimulationResult RRold(int timeQuant) { // this version doesnt really work well for big time quants.
         int currentTime = 0;
         int switchNumber = 0;
 
@@ -206,21 +208,22 @@ public class Main {
                 }
             }
 
-            //Przenoszę skończone procesy do archiwum
+
             if (activeListRR.isEmpty()) {
                 currentTime += 1;
             }
             else {
             for (Proces proces : activeListRR) {
+                //Przenoszę skończone procesy do archiwum
                 if (proces.timeLeft <= 0) {
                     doneListRR.add(proces);
                 } else {
                     for (Proces proces2 : activeListRR) {
                         if (proces2.timeLeft >0) {
                             //Jeżeli ten proces jest obecnie wykonywany, to czeka tylko tak długo ile potrzeba na jego wykonanie.
-                            //if (proces2.equals(proces)) {proces2.waitingTime += min(timeQuant, proces2.timeLeft);}
-                            //else {proces2.waitingTime += timeQuant;}
-                            proces2.waitingTime += timeQuant;
+                            if (proces2.equals(proces)) {proces2.waitingTime += min(timeQuant, proces2.timeLeft);}
+                            else {proces2.waitingTime += timeQuant;}
+                            //proces2.waitingTime += timeQuant;
                         }
                     }
                     proces.timeLeft -= min(timeQuant,proces.timeLeft);// Za każdym razem, kiedy wykonam jedną jednostkę procesu, wszystkie nne czekają.
@@ -249,8 +252,70 @@ public class Main {
             averageWaitTime = averageWaitTime / doneListRR.size();
             return new SimulationResult(switchNumber,averageWaitTime,longestWaitTime);
     }
+
+    private static SimulationResult RR(int timeQuant) {
+        int currentTime = 0;
+        int switchNumber = 0;
+
+
+        while(!activeListRR.isEmpty() || !waitingListRR.isEmpty()) {
+
+            //Aktywuje procesy, których czas nadszedł :)
+            for (Proces proces : waitingListRR) {
+                if (proces.arrivalTime <= currentTime) {
+                    activeListRR.add(proces);
+                }
+            }
+
+            //Przenoszę skończone procesy do archiwum
+            if (activeListRR.isEmpty()) {
+                currentTime += 1;
+            }
+            else {
+                for (Proces proces :activeListRR) {
+                    waitingListRR.remove(proces);
+                    if (proces.timeLeft <= 0) {
+                        doneListRR.add(proces);
+                    }
+                    else {
+                        for (int iq = timeQuant; iq > 0; iq--) {
+                            if (proces.timeLeft > 0) {
+                                proces.timeLeft--;
+                                currentTime++;
+                                for (Proces proces2 : activeListRR) {
+                                    if (proces2.timeLeft > 0) {
+                                        proces2.waitingTime++;
+                                    }
+                                }
+                            }
+                        }
+                        switchNumber++;
+                    }
+
+                }}
+
+
+            for (Proces proces : doneListRR) {
+                activeListRR.remove(proces);// Usuwam podczas iteorwania po innej liście, żeby uniknąć concurrent modification exception
+            }
+
+
+        }
+        int longestWaitTime = 0;
+        int averageWaitTime = 0;
+        for (Proces proces:doneListRR) {
+            averageWaitTime += proces.waitingTime;
+            if (proces.waitingTime > longestWaitTime) {
+                longestWaitTime = proces.waitingTime;
+            }
+
+        }
+        //averageWaitTime = (int) Math.round(averageWaitTime + switchNumber*0.2);
+        averageWaitTime = averageWaitTime / doneListRR.size();
+        return new SimulationResult(switchNumber,averageWaitTime,longestWaitTime);
+    }
     public static void printSimulationInfo() {
-        System.out.println("Liczba procesów: " + processNumber);
+        System.out.println("Liczba procesów na symulacje: " + processNumber);
         System.out.println("Kwant czasu RR: " + RRtimeQuant);
         System.out.println("Wyniki to średnia uruchomienia symulacji " + runAmount + " razy.");
     }

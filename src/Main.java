@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.concurrent.ThreadLocalRandom;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -17,6 +18,7 @@ public class Main {
     protected static ArrayList<SimulationResult> resultsFCFS = new ArrayList<>();
     protected static ArrayList<SimulationResult> resultsSJF = new ArrayList<>();
     protected static ArrayList<SimulationResult> resultsRR = new ArrayList<>();
+    protected static HashSet<Proces> starvedProcesses = new HashSet<>();
 
 
 
@@ -186,6 +188,7 @@ public class Main {
         int longestWaitTime = 0;
         int averageWaitTime = 0;
         for (Proces proces:doneListSJF) {
+            if (proces.waitingTime > processNumber*10) {starvedProcesses.add(proces);}
             if (proces.waitingTime > longestWaitTime) {
                 longestWaitTime = proces.waitingTime;
             }
@@ -318,5 +321,6 @@ public class Main {
         System.out.println("Liczba procesów na symulacje: " + processNumber);
         System.out.println("Kwant czasu RR: " + RRtimeQuant);
         System.out.println("Wyniki to średnia uruchomienia symulacji " + runAmount + " razy.");
+        System.out.println("Średnia liczba zagłodzonych (czas oczekiwania powyżej " +processNumber*10+") procesów w SJF:" + starvedProcesses.size()/runAmount);
     }
 }
